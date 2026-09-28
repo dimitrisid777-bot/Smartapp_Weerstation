@@ -1,6 +1,6 @@
 Smart App Weerstation
 
-Pyhton project waarbij ik een weerstation ontwerp met Python.
+Phyton project waarbij ik een weerstation ontwerp met Python.
 
 Weerstation Sprint 1: voer per dag temperatuur, windsnelheid en luchtvoetigheid in en toont fahrenheit.
 
