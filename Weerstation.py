@@ -1,4 +1,3 @@
-#sprint1
 def fahrenheit(temp_celcius):
     return 32 + (temp_celcius * 1.8)
 
@@ -51,5 +50,6 @@ def weerstation():
 
 weerstation()
 
-#sprint2
+
+
 
