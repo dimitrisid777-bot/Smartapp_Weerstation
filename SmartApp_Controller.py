@@ -1,27 +1,54 @@
-def aantal_dagen(inputFile):
-    bestand = open(inputFile, 'r')
-    regels = bestand.readlines()
-    bestand.close()
 
-    return len(regels) - 1  # We willen de eerste regel skippen dus we doen - 1
+def aantal_dagen(inputFile):
+    try:
+        bestand = open(inputFile, 'r')
+        regels = bestand.readlines()
+        bestand.close()
+
+        #Eerste regel met kolomnamen niet meetellen
+        return max(0, len(regels) - 1)
+
+    except FileNotFoundError:
+        print('Fout: Het invoerbestand bestaat niet!')
+        return None
+
+    except OSError:
+        print('Fout: Het invoerbestand kan niet gelezen worden!')
+        return None
 
 
 def auto_bereken(inputFile, outputFile):
-    bestand = open(inputFile, 'r')
-    regels = bestand.readlines()
-    bestand.close()
+    try:
+        bestand = open(inputFile, 'r')
+        regels = bestand.readlines()
+        bestand.close()
 
-    uitvoer = open(outputFile, 'w')
+    except FileNotFoundError:
+        print('Fout: Het invoerbestand bestaat niet!')
+        return False
 
+    except OSError:
+        print('Fout: Het invoerbestand kan niet gelezen worden!')
+        return False
+
+    uitvoer_regels = []
+
+    #Eerste regel overslaan
     for regel in regels[1:]:
         delen = regel.split()
 
-        datum = delen[0]
-        aantal_mensen = int(delen[1])
-        temp_setpoint = float(delen[2])
-        temp_buiten = float(delen[3])
-        neerslag = float(delen[4])
+        try:
+            datum = delen[0]
+            aantal_mensen = int(delen[1])
+            temp_setpoint = float(delen[2])
+            temp_buiten = float(delen[3])
+            neerslag = float(delen[4])
 
+        except (ValueError, IndexError):
+            print('Fout: Het invoerbestand bevat ongeldige gegevens!')
+            return False
+
+        #CV berekenen
         verschil = temp_setpoint - temp_buiten
 
         if verschil >= 20:
@@ -31,72 +58,118 @@ def auto_bereken(inputFile, outputFile):
         else:
             cv = 0
 
+        #Ventilatie maximaal op stand 4
         ventilatie = aantal_mensen + 1
 
         if ventilatie > 4:
             ventilatie = 4
 
+        #Bewatering bij minder dan 3 mm neerslag
         if neerslag < 3:
             bewatering = True
         else:
             bewatering = False
 
-        uitvoer.write(f'{datum};{cv};{ventilatie};{bewatering}\n')
+        uitvoer_regels.append(
+            f'{datum};{cv};{ventilatie};{bewatering}\n'
+        )
 
-    uitvoer.close()
+    try:
+        with open(outputFile, 'w') as uitvoer:
+            uitvoer.writelines(uitvoer_regels)
+
+    except OSError:
+        print('Fout: Het uitvoerbestand kan niet opgeslagen worden!')
+        return False
+
+    return True
 
 
 def overwrite_settings(outputFile):
-    datum = input('\nVoer een datum in (bijv. 05-10-2024): ')
+    try:
+        with open(outputFile, 'r') as bestand:
+            regels = bestand.readlines()
 
-    bestand = open(outputFile, 'r')
-    regels = bestand.readlines()
-    bestand.close()
+    except FileNotFoundError:
+        print('Fout: Bereken eerst de actuatoren met optie 2!')
+        return -2
 
-    gevonden = False
+    except OSError:
+        print('Fout: Het uitvoerbestand kan niet gelezen worden!')
+        return -2
 
-    for regel in regels:
-        delen = regel.strip().split(';')
+    #Datum zoeken
+    while True:
+        datum = input('\nVoer een datum in (bijv. 05-10-2024): ')
 
-        if delen[0] == datum:
-            gevonden = True
+        if datum == '':
+            print('Bewerking geannuleerd.')
+            return -4
 
-    if gevonden == False:
-        return -1
-    print('\nKies een systeem:')
-    print('1 = CV')
-    print('2 = Ventilatie')
-    print('3 = Bewatering')
+        gevonden = False
 
-    systeem = input('Maak een keuze: ')
+        for regel in regels:
+            delen = regel.strip().split(';')
 
-    if systeem != '1' and systeem != '2' and systeem != '3':
-        return -3
+            if delen[0] == datum:
+                gevonden = True
+                break
 
-    nieuwe_waarde = input('Voer de nieuwe waarde in: ')
+        if gevonden:
+            break
 
-    if systeem == '1':
-        try:
-            nieuwe_waarde = int(nieuwe_waarde)
-        except ValueError:
-            return -3
+        print('Datum niet gevonden! Probeer opnieuw.')
 
-        if nieuwe_waarde < 0 or nieuwe_waarde > 100:
-            return -3
+    #Systeem kiezen
+    while True:
+        print('\nKies een systeem:')
+        print('1 = CV')
+        print('2 = Ventilatie')
+        print('3 = Bewatering')
 
-    elif systeem == '2':
-        try:
-            nieuwe_waarde = int(nieuwe_waarde)
-        except ValueError:
-            return -3
+        systeem = input('Maak een keuze: ')
 
-        if nieuwe_waarde < 0 or nieuwe_waarde > 4:
-            return -3
+        if systeem in ('1', '2', '3'):
+            break
 
-    elif systeem == '3':
-        if nieuwe_waarde != '0' and nieuwe_waarde != '1':
-            return -3
+        if systeem == '':
+            print('Bewerking geannuleerd.')
+            return -4
 
+        print('Ongeldig systeem! Kies 1, 2 of 3.')
+
+    #Nieuwe waarde controleren
+    while True:
+        nieuwe_waarde = input('Voer de nieuwe waarde in: ')
+
+        if nieuwe_waarde == '':
+            print('Bewerking geannuleerd.')
+            return -4
+
+        if systeem == '1' or systeem == '2':
+            try:
+                nieuwe_waarde = int(nieuwe_waarde)
+
+            except ValueError:
+                print('Ongeldige invoer! Voer een geheel getal in.')
+                continue
+
+            if systeem == '1' and not (0 <= nieuwe_waarde <= 100):
+                print('CV moet tussen 0 en 100 liggen!')
+                continue
+
+            if systeem == '2' and not (0 <= nieuwe_waarde <= 4):
+                print('Ventilatie moet tussen 0 en 4 liggen!')
+                continue
+
+        elif systeem == '3':
+            if nieuwe_waarde not in ('0', '1'):
+                print('Bewatering moet 0 of 1 zijn!')
+                continue
+
+        break
+
+    #De juiste regel aanpassen
     for i in range(len(regels)):
         delen = regels[i].strip().split(';')
 
@@ -116,9 +189,13 @@ def overwrite_settings(outputFile):
 
             regels[i] = ';'.join(delen) + '\n'
 
-    bestand = open(outputFile, 'w')
-    bestand.writelines(regels)
-    bestand.close()
+    try:
+        with open(outputFile, 'w') as bestand:
+            bestand.writelines(regels)
+
+    except OSError:
+        print('Fout: Het uitvoerbestand kan niet aangepast worden!')
+        return -2
 
     return 0
 
@@ -127,39 +204,53 @@ def smart_app_controller():
     inputFile = 'smartapp_input.txt'
     outputFile = 'output.txt'
 
+    #Menu blijft terugkomen tot optie 4
     while True:
-        print('\nSmart App Controller')
+        print('\n=================================')
+        print('       SMART APP CONTROLLER')
+        print('=================================')
         print('1: Hoeveel dagen zijn er aanwezig?')
         print('2: Autobereken alle actuatoren')
         print('3: Overschrijf een berekende waarde')
         print('4: Stoppen')
+        print('=================================')
 
         keuze = input('\nMaak een keuze: ')
 
         if keuze == '1':
             dagen = aantal_dagen(inputFile)
-            print(f'\nEr zijn {dagen} dagen aanwezig')
+
+            if dagen is not None:
+                print(f'\nEr zijn {dagen} dagen aanwezig')
 
         elif keuze == '2':
-            auto_bereken(inputFile, outputFile)
-            print('\nDe actuatoren zijn berekend en opgeslagen')
+            gelukt = auto_bereken(inputFile, outputFile)
+
+            if gelukt:
+                print('\nDe actuatoren zijn berekend en opgeslagen')
 
         elif keuze == '3':
             resultaat = overwrite_settings(outputFile)
 
+            # Resultaat van het overschrijven
             if resultaat == 0:
                 print('\nDe waarde is aangepast')
             elif resultaat == -1:
                 print('\nDatum niet gevonden')
+            elif resultaat == -2:
+                print('\nDe bewerking kon niet worden uitgevoerd')
             elif resultaat == -3:
                 print('\nOngeldig systeem of ongeldige waarde')
+            elif resultaat == -4:
+                print('\nTerug naar het menu.')
 
         elif keuze == '4':
             print('\nProgramma gestopt')
             break
 
         else:
-            print('Ongeldige keuze')
+            print('\nOngeldige keuze! Probeer opnieuw.')
 
 
-smart_app_controller()
+if __name__ == '__main__':
+    smart_app_controller()
