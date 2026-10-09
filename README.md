@@ -23,7 +23,9 @@ De Smart App Controller leest gegevens uit een tekstbestand en berekent automati
 De gebruiker kan:
 
 •Het aantal dagen in het bestand bekijken
+
 •Automatisch de actuatoren berekenen
+
 •Een berekende waarde overschrijven
 
 De resultaten worden opgeslagen in output.txt. Bij ongeldige invoer krijgt de gebruiker een foutmelding en kan deze opnieuw proberen.
